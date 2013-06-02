@@ -61,11 +61,12 @@ class TestLinks(unittest.TestCase):
     def setUp(self):
         self.user_agent = crawler.UserAgent()
         self.urls = (
+            #'http://nashgorod.ru/forum/',
             'http://www.google.com/',
-            'http://python.org/',
-            'http://lxml.de/index.html',
-            'http://gajim.org/',
-            'http://tv.yandex.ru'
+            #'http://python.org/',
+            #'http://lxml.de/index.html',
+            #'http://gajim.org/',
+            #'http://tv.yandex.ru'
             )
 
 
@@ -76,6 +77,48 @@ class TestLinks(unittest.TestCase):
             fileobj = self.user_agent.open(page_url)
             links.extend([ u for u in links_iterator(fileobj)])
         self.assertTrue(links, 'No links from %d pages' % len(self.urls))
+
+
+    def test_inbound_links(self):
+
+        inbound = []
+        for page_url in self.urls:
+            hostname = urlsplit(page_url).hostname
+            fileobj = self.user_agent.open(page_url)
+
+            def is_inbound(u):
+                h = urlsplit(u)[1]
+                return h == hostname
+
+            links = [ u for u in links_iterator(fileobj, is_inbound)]
+            inbound.extend(
+                [ u for u in links if urlsplit(u).hostname != hostname]
+            )
+            for link in links:
+                print link
+
+        self.assertFalse(inbound, 'Unexpected outbound links: %s' % inbound)
+
+
+    def test_outbound_links(self):
+
+        outbound = []
+        for page_url in self.urls:
+            hostname = urlsplit(page_url).hostname
+            fileobj = self.user_agent.open(page_url)
+
+            def is_outbound(u):
+                h = urlsplit(u).hostname
+                return h != hostname
+
+            links = [ u for u in links_iterator(fileobj, is_outbound) ]
+            outbound.extend(
+                [ u for u in links if urlsplit(u).hostname == hostname]
+            )
+            for link in links:
+                print link
+
+        self.assertFalse(outbound, 'Unexpected inbound links: %s' % outbound)
 
 
 if __name__ == '__main__':
