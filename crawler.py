@@ -1,11 +1,11 @@
 # -*- coding: utf8 -*-
 
 import sys
-import urllib2
+import urllib.request as urllib2
 
 from copy import copy
-from robotparser import RobotFileParser
-from urlparse import urlunsplit, urlsplit
+from urllib.robotparser import RobotFileParser
+from urllib.parse import urlunsplit, urlsplit
 
 
 # config
@@ -16,7 +16,7 @@ DEFAULT_HEADERS = {
     'Content-Language' : 'ru,en',
     }
 DEFAULT_AGENTNAME = 'Test/1.0'
-DEFAULT_EMAIL = ''
+DEFAULT_EMAIL = 'admin@example.com'
 
 class RobotsHTTPHandler(urllib2.HTTPHandler):
 
@@ -24,9 +24,7 @@ class RobotsHTTPHandler(urllib2.HTTPHandler):
         urllib2.HTTPHandler.__init__(self, *args, **kwargs)
         self.agentname = agentname
 
-
     def http_open(self, request):
-
         url = request.get_full_url()
         host = urlsplit(url)[1]
         robots_url = urlunsplit(('http', host, '/robots.txt', '', ''))
@@ -35,7 +33,6 @@ class RobotsHTTPHandler(urllib2.HTTPHandler):
         if not rp.can_fetch(self.agentname, url):
             raise RuntimeError('Forbidden by robots.txt')
         return urllib2.HTTPHandler.http_open(self, request)
-
 
 class UserAgent(object):
 
@@ -48,21 +45,19 @@ class UserAgent(object):
             RobotsHTTPHandler(self.agentname),)
         headers = copy(DEFAULT_HEADERS)
         headers.update(new_headers)
-        opener_headers = [ (k,v) for k, v in headers.iteritems() ]
+        opener_headers = [ (k,v) for k, v in headers.items() ]
         opener_headers.append(('User-Agent', self.agentname))
         if self.email:
             opener_headers.append(('From', self.email))
         self.opener.addheaders = opener_headers
 
-
     def open(self, url):
-
         return self.opener.open(url, None, TIMEOUT)
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: python crawler.py URL"
+        print ("Usage: python crawler.py URL")
         sys.exit(1)
 
     import socket
@@ -70,26 +65,26 @@ if __name__ == '__main__':
     ua = UserAgent()
     try:
         resp = ua.open(sys.argv[1])
-    except RuntimeError, e:
+    except RuntimeError as e:
         sys.stderr.write('Error: %s\n' % e)
         sys.exit(4)
 
-    except urllib2.HTTPError, e:
+    except urllib2.HTTPError as e:
         sys.stderr.write('Error: %s\n' % e)
         sys.stderr.write('Server error document:\n')
         sys.stderr.write(e.read())
         sys.exit(2)
-    except urllib2.URLError, e:
+    except urllib2.URLError as e:
         sys.stderr.write('Error: %s\n' % e)
         sys.exit(3)
 
     page = ''
-    bytes_read = long()
+    bytes_read = int()
     while 1:
         try:
-            data = resp.read(1024)
+            data = resp.read(1024).decode('utf8')
             page = page + data
-        except socket.error, e:
+        except socket.error as e:
             sys.stderr.write('Error reading data: %s' % e)
             sys.exit(5)
 
@@ -97,10 +92,10 @@ if __name__ == '__main__':
             break
         bytes_read += len(data)
 
-    content_length = long(resp.info().get('Content-Length', 0))
+    content_length = int(resp.info().get('Content-Length', 0))
     if content_length and (bytes_read != content_length):
-        print "Expected %d bytes, but read %d bytes" % \
-                (content_length, bytes_read)
+        print ("Expected %d bytes, but read %d bytes" % \
+                (content_length, bytes_read))
         sys.exit(6)
 
     sys.stdout.write(data)

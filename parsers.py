@@ -1,7 +1,7 @@
 # -*- coding utf8 -*-
 
 import lxml.html
-from urlparse import urlsplit, urljoin
+from urllib.parse import urlsplit, urljoin
 
 def links_iterator(response, link_filter=None):
     if not link_filter:
