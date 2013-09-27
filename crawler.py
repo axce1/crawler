@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 
+import logging
 import sys
 import urllib.request as urllib2
 
@@ -7,6 +8,7 @@ from copy import copy
 from urllib.robotparser import RobotFileParser
 from urllib.parse import urlunsplit, urlsplit
 
+from parsers import links_iterator
 
 # config
 TIMEOUT = 5
@@ -37,7 +39,8 @@ class RobotsHTTPHandler(urllib2.HTTPHandler):
 class UserAgent(object):
 
     def __init__(self, agentname=DEFAULT_AGENTNAME,
-                 email=DEFAULT_EMAIL, new_headers={}):
+                 email=DEFAULT_EMAIL, new_headers={},
+                 ignore_robots=False):
 
         self.agentname = agentname
         self.email = email
@@ -50,9 +53,43 @@ class UserAgent(object):
         if self.email:
             opener_headers.append(('From', self.email))
         self.opener.addheaders = opener_headers
+        if ignore_robots:
+            self.opener = urllib2.build_opener()
+        else:
+            self.opener = urllib2.build_opener(
+            RobotsHTTPHandler(self.agentname))
 
     def open(self, url):
         return self.opener.open(url, None, TIMEOUT)
+
+    def traverse(self, start_url, links_filter=None, on_success=None, on_failure=None):
+        queue = [start_url]
+        passed = set()
+        last_url = None
+
+        while queue:
+            logging.debug('Queuse size: %d, Passed: %d ' % \
+                          (len(queue), len(passed)))
+            url = queue.pop(0)
+            try:
+                if last_url:
+                    response = self.open(url) #  , {'Referer': last_url}) не работает с этом параметром
+                else:
+                    print(url)
+                    response = self.open(url)
+                if on_success:
+                    on_success(url, response)
+                logging.debug('Success')
+                new_links = [ u for u in links_iterator(response, links_filter)
+                             if not u in passed and not u in queue]
+                queue.extend(new_links)
+            except Exception as ex:
+                logging.warn('Failure: %s' % ex)
+                if on_failure:
+                    on_failure(url, ex)
+            last_url = url
+            passed.add(url)
+        logging.debug('Crawling completed.')
 
 
 if __name__ == '__main__':

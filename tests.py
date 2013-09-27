@@ -49,12 +49,12 @@ class TestLinks(unittest.TestCase):
         self.user_agent = crawler.UserAgent()
         self.urls = (
             #'http://nashgorod.ru/forum/',
-            'http://python.org/',
-            'http://lxml.de/index.html',
-            'http://gajim.org/',
-            'http://tv.yandex.ru',
+            #'http://python.org/',
+            #'http://lxml.de/index.html',
+            #'http://gajim.org/',
+            #'http://tv.yandex.ru',
             'http://example.com',
-            'http://r-bis.com/id/',
+            #'http://r-bis.com/id/',
             )
 
     def test_alllinks(self):
@@ -100,6 +100,34 @@ class TestLinks(unittest.TestCase):
                 print (link)
 
         self.assertFalse(outbound, 'Unexpected inbound links: %s' % outbound)
+
+    def test_traverse(self):
+
+        page_url = 'http://pi-code.blogspot.com'
+        hostname = urlsplit(page_url).hostname
+
+        def is_valid_link(u):
+            url_parts = urlsplit(u)
+            return False if url_parts.hostname == hostname \
+                    else False if url_parts[0] != 'http' \
+                    else True
+
+        passed = []
+        errors = []
+
+        def on_success(url, response):
+            passed.append(url)
+
+        def on_failure(url, error):
+            errors.append(url)
+
+        self.user_agent.traverse(
+            page_url,
+            links_filter=is_valid_link,
+            on_success=on_success,
+            on_failure=on_failure)
+
+        self.assertTrue(len(passed) > 1 , 'No nodes were passed')
 
 
 if __name__ == '__main__':
