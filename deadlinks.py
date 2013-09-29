@@ -17,11 +17,12 @@ def is_valid_link(u, hostname):
     """
     Фильтрация ссылок.
     """
-    logging.debug("Validating link: '%s'" % u)
-    url_parts = urlsplit(u)
-    return False if url_parts.hostname != hostname \
-        else False if url_parts[0] != 'http' \
-        else True
+    if u != 'javascript:void(0)':
+        logging.debug("Validating link: '%s'" % u)
+        url_parts = urlsplit(u)
+        return False if url_parts.hostname != hostname \
+            else False if url_parts[0] != 'http' \
+            else True
 
 def main(hostname):
     """
@@ -32,7 +33,7 @@ def main(hostname):
         print ("%s: %s" % (url, error))
 
     ua = UserAgent(agentname=AGENT_NAME, ignore_robots=True)
-    root = urlunparse(('http', hostname, '/', '', '', ''))
+    root = urlunparse(('http', hostname, '', '', '', ''))
     ua.traverse(
     root,
     links_filter=lambda u: is_valid_link(u, hostname),

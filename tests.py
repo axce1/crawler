@@ -103,7 +103,8 @@ class TestLinks(unittest.TestCase):
 
     def test_traverse(self):
 
-        page_url = 'http://pi-code.blogspot.com'
+        #page_url = 'http://pi-code.blogspot.com'
+        page_url = 'http://example.com'
         hostname = urlsplit(page_url).hostname
 
         def is_valid_link(u):
@@ -128,6 +129,14 @@ class TestLinks(unittest.TestCase):
             on_failure=on_failure)
 
         self.assertTrue(len(passed) > 1 , 'No nodes were passed')
+
+    def test_blogspot(self):
+        page_url = 'http://krushinsky.blogspot.com/'
+        fileobj = self.user_agent.open(page_url)
+        test_link = 'http://krushinsky.blogspot.com/2007_12_01_archive.html'
+        links = [ u for u in links_iterator(fileobj, lambda u: u == test_link) ]
+        print (links)
+        self.assertTrue(len(links), "Link '%s' is absent" % test_link)
 
 
 if __name__ == '__main__':
