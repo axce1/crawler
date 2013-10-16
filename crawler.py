@@ -63,6 +63,8 @@ class UserAgent(object):
         return self.opener.open(url, None, TIMEOUT)
 
     def traverse(self, start_url, links_filter=None, on_success=None, on_failure=None):
+        #queue = set()
+        #queue.add(start_url)
         queue = [start_url]
         passed = set()
         last_url = None
@@ -70,19 +72,20 @@ class UserAgent(object):
         while queue:
             logging.debug('Queuse size: %d, Passed: %d ' % \
                           (len(queue), len(passed)))
-            url = queue.pop(0)
+            url = queue.pop()
+            logging.debug('crawling lind: %s' % url)
             try:
                 if last_url:
                     response = self.open(url) #  , {'Referer': last_url}) не работает с этом параметром
                 else:
-                    print(url)
                     response = self.open(url)
                 if on_success:
                     on_success(url, response)
                 logging.debug('Success')
-                new_links = [ u for u in links_iterator(response, links_filter)
-                             if not u in passed and not u in queue]
-                queue.extend(new_links)
+                new_links = set([ u for u in links_iterator(response, links_filter)
+                             if not u in passed and not u in queue])
+                #queue.update(new_links)
+                queue.extend(list(new_links))
             except Exception as ex:
                 logging.warn('Failure: %s' % ex)
                 if on_failure:
